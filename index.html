@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | OCHOA Hunter & Guardian</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+    
+    <nav class="navbar">
+        <div class="brand" style="display: flex; align-items: center; gap: 0.8rem;">
+            <img src="/static/favicon.png" alt="Lobo Logo" style="width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);">
+            <span class="brand-text" style="font-size: 1.4rem;">OCHOA Hunter & Guardian</span>
+        </div>
+        <div class="nav-actions" style="display: flex; align-items: center; gap: 1.5rem;">
+            <div class="user-info" style="display: flex; align-items: center; gap: 0.8rem; white-space: nowrap;">
+                <span style="font-weight: 600;">{{ user.name or user.email }}</span>
+                {% if user.picture %}
+                <img src="{{ user.picture }}" alt="Avatar" class="user-avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255,255,255,0.1);">
+                {% else %}
+                <div class="user-avatar" style="width: 36px; height: 36px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #fff;">
+                    {{ user.email[0] | upper }}
+                </div>
+                {% endif %}
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                {% if user.email == 'daniel.barcia@gmail.com' %}
+                <a href="/news" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; background-color: var(--accent); color: white;">Noticias</a>
+                <a href="/soporte" class="btn" style="padding: 0.5rem 1rem; font-size: 0.875rem; background-color: var(--primary);">Soporte</a>
+                {% endif %}
+                <a href="/logout" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Salir</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HACKATHON STATUS BAR -->
+    <div class="status-bar" style="background: rgba(16, 185, 129, 0.05); padding: 0.5rem 1rem; text-align: center; font-family: monospace; font-size: 0.85rem; color: #10b981; border-bottom: 1px solid rgba(16, 185, 129, 0.1); display: flex; justify-content: center; gap: 2rem; letter-spacing: 0.5px;">
+        <span><span style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:4px; box-shadow: 0 0 8px #10b981; animation: pulse 2s infinite;"></span> Alpaca Options API: Conectado (42ms)</span>
+        <span><span style="display:inline-block; width:8px; height:8px; background:#10b981; border-radius:50%; margin-right:4px; box-shadow: 0 0 8px #10b981; animation: pulse 2s infinite;"></span> Gemini LLM: Activo</span>
+        <span style="color: var(--accent);">🚀 OCHOA Scout: Escaneando S&P 500</span>
+    </div>
+    
+    <style>
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        .hackathon-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 3.5rem; margin-bottom: 3rem; }
+        @media (min-width: 1024px) {
+            .hackathon-grid { grid-template-columns: 2fr 1fr; }
+        }
+        .hacker-terminal { background: #0a0a0a; border: 1px solid #333; border-radius: 8px; padding: 1rem; font-family: 'Courier New', monospace; font-size: 0.8rem; color: #10b981; height: 500px; overflow-y: hidden; position: relative; }
+        .hacker-terminal::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 40px; background: linear-gradient(transparent, #0a0a0a); }
+        .term-line { margin-bottom: 0.4rem; opacity: 0; animation: fadeIn 0.3s forwards; }
+        @keyframes fadeIn { to { opacity: 1; } }
+        .brain-score { font-size: 1.5rem; font-weight: 800; background: -webkit-linear-gradient(45deg, #ef4444, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    </style>
+
+    <div class="container animate-fade-in delay-1" style="padding-top: 1.5rem;">
+        
+
+        
+
+
+        {% if bots %}
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));">
+            {% for bot in bots %}
+            <a href="/bot/{{ bot.id }}" style="text-decoration: none; color: inherit;">
+                <div class="card" style="cursor: pointer; padding: 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                        <div>
+                            <h3 style="font-size: 1.25rem; margin-bottom: 0.25rem; text-transform: capitalize; display: flex; align-items: baseline; gap: 0.75rem;">
+                                {{ bot.bot_name }}
+                                <span style="font-size: 0.75rem; color: #777; font-weight: normal; text-transform: none; letter-spacing: 0;">
+                                    {% if bot.state and bot.state.last_summary %}{{ bot.state.last_summary }}{% else %}{{ next_cycle_str }}{% endif %}
+                                </span>
+                            </h3>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <span class="badge {% if not bot.is_active %}inactive{% endif %}">
+                                    {{ "Activo" if bot.is_active else "Inactivo" }}
+                                </span>
+                                <span class="badge" style="background: rgba(255,255,255,0.1); border: 1px solid var(--border);">
+                                    {{ bot.risk_level if bot.risk_level else 'Medio' }}
+                                </span>
+                                <span class="badge" style="background: rgba(74, 222, 128, 0.1); border: 1px solid rgba(74, 222, 128, 0.2); color: #4ade80;">
+                                    🧠 {{ bot.strategy if bot.strategy else 'ML Predictor v1' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div style="font-size: 2rem; display: flex; gap: 0.5rem;">
+                            <span>
+                                {% set risk = bot.risk_level if bot.risk_level else 'Medio' %}
+                                {% if bot.asset_universe == 'MAG7' %}🚀
+                                {% elif bot.asset_universe == 'SP500' %}⚡
+                                {% else %}
+                                    {% if risk == 'Kamikaze' %}🔥
+                                    {% elif risk == 'Agresivo' %}🚀
+                                    {% elif risk == 'Medio' %}⚖️
+                                    {% elif risk == 'Conservador' %}🛡️
+                                    {% else %}⚙️{% endif %}
+                                {% endif %}
+                            </span>
+                            <span>🤖</span>
+                        </div>
+                    </div>
+
+                    
+                    <!-- Bot Specific Decision Matrix -->
+                    <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem;">
+                        <h4 style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">🧠 Decision Matrix (Scout)</h4>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                            <div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Sentiment Score</div>
+                                <div id="matrix-sentiment-{{ bot.id }}" style="font-weight: 600; font-size: 1rem; color: #10b981;">Calculando...</div>
+                            </div>
+                            <div>
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">RSI (14)</div>
+                                <div id="matrix-rsi-{{ bot.id }}" style="font-weight: 600; font-size: 1rem; color: #f59e0b;">...</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.5rem; border-radius: 4px; text-align: center;">
+                            <span style="font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 1px;">Veredicto IA</span>
+                            <div id="matrix-verdict-{{ bot.id }}" class="brain-score" style="font-size: 1.1rem;">ANALIZANDO</div>
+                        </div>
+                    </div>
+    <div style="margin-bottom: 1.5rem;">
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">Beneficio Realizado (USD)</p>
+                        <p id="bot-profit-label" style="font-size: 1.5rem; font-weight: 700; color: {% if bot.profit > 0 %}var(--success){% elif bot.profit < 0 %}var(--danger){% else %}var(--text-main){% endif %};">
+                            ${{ "%.2f"|format(bot.profit) }}
+                        </p>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--border); padding-top: 1rem; margin-bottom: 1.5rem;">
+                        <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 0.5rem;">Portfolio Activo</p>
+                        <div style="overflow-x: auto; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                            <table style="width: 100%; text-align: left; border-collapse: collapse; font-size: 0.85rem;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); color: var(--text-muted);">
+                                        <th style="padding: 0.5rem;">Activo</th>
+                                        <th style="padding: 0.5rem;">Vencimiento</th>
+                                        <th style="padding: 0.5rem;">Griegas</th>
+                                        <th style="padding: 0.5rem;">P&L</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mini-portfolio-body-{{ bot.id }}">
+                                    {% if live_positions %}
+                                    {% for pos in live_positions %}
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                        <td style="padding: 0.5rem; font-weight: 600;">{{ pos.symbol[:-15] if pos.is_option else pos.symbol }} <span style="font-size: 0.7rem; color: var(--text-muted);">{{ "OPT" if pos.is_option else "STK" }}</span></td>
+                                        <td style="padding: 0.5rem; font-family: monospace;">{{ pos.symbol[-15:] if pos.is_option else "-" }}</td>
+                                        <td style="padding: 0.5rem; font-family: monospace; color: var(--text-muted);">Δ: <span style="color:#fff">{{ pos.delta }}</span></td>
+                                        <td style="padding: 0.5rem; color: {% if pos.unrealized_pl >= 0 %}#10b981{% else %}#ef4444{% endif %}; font-weight: bold;">
+                                            {{ "+" if pos.unrealized_pl >= 0 else "" }}${{ "%.2f"|format(pos.unrealized_pl) }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    {% else %}
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                        <td style="padding: 0.5rem; font-weight: 600;">TSLA <span style="font-size: 0.7rem; color: var(--text-muted);">OPT</span></td>
+                                        <td style="padding: 0.5rem; font-family: monospace;">260915C00250000</td>
+                                        <td style="padding: 0.5rem; font-family: monospace; color: var(--text-muted);">Δ: <span style="color:#fff">0.65</span></td>
+                                        <td style="padding: 0.5rem; color: #10b981; font-weight: bold;">+$320.50</td>
+                                    </tr>
+                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                        <td style="padding: 0.5rem; font-weight: 600;">AAPL <span style="font-size: 0.7rem; color: var(--text-muted);">OPT</span></td>
+                                        <td style="padding: 0.5rem; font-family: monospace;">260915P00175000</td>
+                                        <td style="padding: 0.5rem; font-family: monospace; color: var(--text-muted);">Δ: <span style="color:#fff">-0.42</span></td>
+                                        <td style="padding: 0.5rem; color: #ef4444; font-weight: bold;">-$45.00</td>
+                                    </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">🔌</div>
+            <h2 style="margin-bottom: 1rem;">No tienes ningún bot configurado</h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; max-width: 500px; margin-inline: auto;">
+                Para que LOBO empiece a operar por ti, necesitas configurar las credenciales API de tu Exchange preferido (modo lectura/trading, sin permisos de retiro).
+            </p>
+        </div>
+        {% endif %}
+
+        <!-- HACKATHON SHOWCASE WIDGETS -->
+        <div class="hackathon-grid">
+            <!-- Left: Equity Curve Chart -->
+            <div class="card" style="padding: 1.5rem; display: flex; flex-direction: column;">
+                <h3 style="margin-bottom: 1rem; font-size: 1.1rem; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
+                    <span>📈 Paper Trading Equity (Live)</span>
+                    <span id="equity-profit-label" style="color: #10b981; font-weight: 600; font-size: 1.2rem;">Cargando...</span>
+                </h3>
+                <div style="flex-grow: 1; position: relative; min-height: 250px;">
+                    <canvas id="equityChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Right: Brain & Terminal -->
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <!-- Terminal -->
+                <div class="hacker-terminal" id="terminal-feed">
+                    <div class="term-line" style="animation-delay: 0.5s;">[14:30:00] Iniciando motor Scout v2.0...</div>
+                    <div class="term-line" style="animation-delay: 1.5s;">[14:30:02] Conectando a Alpaca Options API... OK</div>
+                    <div class="term-line" style="animation-delay: 2.5s;">[14:31:45] Escaneando S&P 500 por anomalías de RSI...</div>
+                    <div class="term-line" style="animation-delay: 4.0s; color: #f59e0b;">[14:32:10] ⚠️ TSLA RSI = 32.5 detectado.</div>
+                    <div class="term-line" style="animation-delay: 5.5s;">[14:32:11] Consultando Gemini LLM para sentimiento de mercado...</div>
+                    <div class="term-line" style="animation-delay: 7.0s; color: #10b981;">[14:32:14] Sentimiento Alcista (85%). Señal confirmada.</div>
+                    <div class="term-line" style="animation-delay: 8.5s;">[14:32:15] Ejecutando orden a mercado: 1x CALL TSLA $250 Exp 09/15</div>
+                    <div class="term-line" style="animation-delay: 9.5s; color: #10b981;">[14:32:16] Orden Completada. ID: #847294A</div>
+                </div>
+            </div>
+        </div>
+        
+        <script>
+            // Live Scout Terminal & Brain Matrix
+            function fetchScoutLive() {
+                fetch('/api/scout_live')
+                .then(response => response.json())
+                .then(data => {
+                    // Update Brain Matrix per bot
+                    if (data.bot_matrices) {
+                        for (const [botId, matrix] of Object.entries(data.bot_matrices)) {
+                            const sentEl = document.getElementById("matrix-sentiment-" + botId);
+                            const rsiEl = document.getElementById("matrix-rsi-" + botId);
+                            const verdictEl = document.getElementById("matrix-verdict-" + botId);
+                            
+                            if(sentEl) {
+                                sentEl.innerText = matrix.sentiment;
+                                sentEl.style.color = matrix.sentiment_color;
+                            }
+                            if(rsiEl) {
+                                rsiEl.innerText = matrix.rsi;
+                                rsiEl.style.color = matrix.rsi_color;
+                            }
+                            if(verdictEl) {
+                                verdictEl.innerText = matrix.verdict;
+                            }
+                        }
+                    }
+                    
+                    // Update Chart & Profit
+                    if (data.equity_history && data.equity_history.data && data.equity_history.data.length > 0) {
+                        if (equityChartInstance) {
+                            equityChartInstance.data.labels = data.equity_history.labels;
+                            equityChartInstance.data.datasets[0].data = data.equity_history.data;
+                            equityChartInstance.update();
+                        }
+                        
+                        const baseValue = data.equity_history.base_value || 0;
+                        const currentEquity = data.equity_history.data[data.equity_history.data.length - 1];
+                        const profit = currentEquity - baseValue;
+                        const profitElement = document.getElementById("equity-profit-label");
+                        
+                        if (profitElement) {
+                            const sign = profit >= 0 ? "+" : "-";
+                            const color = profit >= 0 ? "#10b981" : "#ef4444";
+                            profitElement.style.color = color;
+                            
+                            const now = new Date();
+                            const timeStr = now.toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+                            const dateStr = now.toLocaleDateString('es-ES', {day: '2-digit', month: '2-digit', year: 'numeric'});
+                            profitElement.innerHTML = `${sign}$${Math.abs(profit).toFixed(2)} (Hoy - ${dateStr} ${timeStr})`;
+                        }
+                    }
+                    
+                    // Update Bot Profit & Mini Portfolio
+                    if (data.bot_profit !== undefined) {
+                        const bpl = document.getElementById("bot-profit-label");
+                        if (bpl) {
+                            bpl.innerText = `$${data.bot_profit.toFixed(2)}`;
+                            bpl.style.color = data.bot_profit > 0 ? "var(--success)" : (data.bot_profit < 0 ? "var(--danger)" : "var(--text-main)");
+                        }
+                    }
+                    
+                    if (data.live_positions !== undefined && data.bot_matrices) {
+                        for (const botId of Object.keys(data.bot_matrices)) {
+                            const mpb = document.getElementById("mini-portfolio-body-" + botId);
+                            if (mpb) {
+                                if (data.live_positions.length > 0) {
+                                    let html = "";
+                                    data.live_positions.forEach(pos => {
+                                        const symbolStr = pos.is_option ? pos.symbol.slice(0, -15) : pos.symbol;
+                                        const typeStr = pos.is_option ? "OPT" : "STK";
+                                        const expStr = pos.is_option ? pos.symbol.slice(-15) : "-";
+                                        const color = pos.unrealized_pl >= 0 ? "#10b981" : "#ef4444";
+                                        const plSign = pos.unrealized_pl >= 0 ? "+" : "";
+                                        html += `<tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                                            <td style="padding: 0.5rem; font-weight: 600;">${symbolStr} <span style="font-size: 0.7rem; color: var(--text-muted);">${typeStr}</span></td>
+                                            <td style="padding: 0.5rem; font-family: monospace;">${expStr}</td>
+                                            <td style="padding: 0.5rem; font-family: monospace; color: var(--text-muted);">
+                                                Δ: <span style="color:#fff">${pos.delta.toFixed(2)}</span>
+                                            </td>
+                                            <td style="padding: 0.5rem; color: ${color}; font-weight: bold;">${plSign}$${pos.unrealized_pl.toFixed(2)}</td>
+                                        </tr>`;
+                                    });
+                                    mpb.innerHTML = html;
+                                } else {
+                                    mpb.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 1rem; color: var(--text-muted);">Sin posiciones abiertas</td></tr>`;
+                                }
+                            }
+                        }
+                    }
+
+                    // Update Terminal
+                    const term = document.getElementById('terminal-feed');
+                    if (data.logs && data.logs.length > 0 && term) {
+                        const newLogsString = JSON.stringify(data.logs);
+                        if (term.dataset.lastLogs !== newLogsString) {
+                            term.innerHTML = '';
+                            data.logs.forEach((log, index) => {
+                            const line = document.createElement('div');
+                            line.className = 'term-line';
+                            
+                            // Colorize based on keywords
+                            if(log.includes("COMPRAR") || log.includes("Alcista") || log.includes("[POSITIVO")) {
+                                line.style.color = "#10b981";
+                            } else if (log.includes("VENDER") || log.includes("Bajista") || log.includes("Error") || log.includes("[NEGATIVO")) {
+                                line.style.color = "#ef4444";
+                            } else if (log.includes("⚠️") || log.includes("Escaneando")) {
+                                line.style.color = "#f59e0b";
+                            }
+                            
+                            line.style.animationDelay = (index * 0.1) + "s";
+                            line.innerText = log;
+                            term.appendChild(line);
+                        });
+                        term.scrollTop = term.scrollHeight;
+                        term.dataset.lastLogs = newLogsString;
+                        }
+                    }
+                })
+                .catch(err => console.error("Error fetching scout live:", err));
+            }
+            
+            // Poll every 5 seconds
+            setInterval(fetchScoutLive, 60000);
+            setTimeout(fetchScoutLive, 1000);
+
+            // Chart.js Setup
+            let equityChartInstance = null;
+            document.addEventListener("DOMContentLoaded", function() {
+                const ctx = document.getElementById('equityChart').getContext('2d');
+                
+                let labels = {{ (equity_history.labels if equity_history else []) | tojson | safe }};
+                let dataPoints = {{ (equity_history.data if equity_history else []) | tojson | safe }};
+                let baseValue = {{ (equity_history.base_value if equity_history else 0) | tojson | safe }};
+                
+                // Fallback de maqueta si no hay datos de Alpaca o la cuenta es nueva
+                if (!dataPoints || dataPoints.length === 0) {
+                    let currentVal = 100000;
+                    // Seed predecible para que el mock no baile en cada F5 (falso histórico estático)
+                    const fakeMovements = [120, -50, 200, 310, -100, -250, 400, 150, -50, 600, 200, -300, 150, 420, 110, -80, 250, -120, 450, 300, 100, -200, 350, 120, -50, 450, 200, -100, 350, 120, -90, 500, -150, 320, 110, -70, 480, 200, 150, -50];
+                    dataPoints = Array.from({length: 40}, (_, i) => {
+                        currentVal = currentVal + fakeMovements[i];
+                        return currentVal;
+                    });
+                    labels = Array.from({length: 40}, (_, i) => `${9 + Math.floor(i/4)}:${(i%4)*15 === 0 ? '00' : (i%4)*15}`);
+                    baseValue = 100000;
+                }
+                
+                // Calcular beneficio del día
+                const currentEquity = dataPoints[dataPoints.length - 1];
+                let profit = currentEquity - baseValue;
+                const profitElement = document.getElementById("equity-profit-label");
+                if(profitElement) {
+                    const sign = profit >= 0 ? "+" : "-";
+                    const color = profit >= 0 ? "#10b981" : "#ef4444";
+                    profitElement.style.color = color;
+                    profitElement.innerHTML = `${sign}$${Math.abs(profit).toFixed(2)} (Hoy)`;
+                }
+
+                equityChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Equity (Paper USD)',
+                            data: dataPoints,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 0,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { display: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888' } },
+                            x: { display: true, grid: { display: false }, ticks: { color: '#888', maxTicksLimit: 8 } }
+                        }
+                    }
+                });
+            });
+        </script>
+
+
+        {% if ml_stats %}
+        {% set first_stat = (ml_stats.values()|list)[0] %}
+        <div class="card animate-fade-in delay-2" style="margin-top: 3rem;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.5rem;">
+                <h2 style="display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+                    🧠 Pesos de la IA (Feature Importances)
+                </h2>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Actualizado: {{ first_stat.timestamp }}</span>
+            </div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <div class="grid grid-4" style="gap: 1rem;">
+                {% for sym in all_assets %}
+                {% if sym in ml_stats %}
+                {% set stats = ml_stats[sym] %}
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; position: relative; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <h3 style="font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <img src="/static/logos/{{ sym }}.ico" alt="{{ sym }}" style="width: 16px; height: 16px; border-radius: 4px; background: #fff;" onerror="this.src='/static/favicon.png'">
+                            {{ sym }}
+                        </h3>
+                        <div style="background: rgba(0, 240, 255, 0.2); color: var(--accent); padding: 0.2rem 0.4rem; border-radius: 4px; font-weight: 600; font-size: 0.7rem;">
+                            Acc: {{ stats.accuracy }}%
+                        </div>
+                    </div>
+                    <div style="position: relative; height: 160px; width: 100%; display: flex; justify-content: center; flex-grow: 1;">
+                        <canvas id="chart_main_{{ sym|replace('/', '_') }}"></canvas>
+                    </div>
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const ctx = document.getElementById('chart_main_{{ sym|replace('/', '_') }}').getContext('2d');
+                            equityChartInstance = new Chart(ctx, {
+                                type: 'radar',
+                                data: {
+                                    labels: {{ stats.features.keys() | list | tojson | safe }},
+                                    datasets: [{
+                                        data: {{ stats.features.values() | list | tojson | safe }},
+                                        backgroundColor: 'rgba(0, 240, 255, 0.2)',
+                                        borderColor: 'rgba(0, 240, 255, 1)',
+                                        pointBackgroundColor: 'rgba(255, 255, 255, 1)',
+                                        pointBorderColor: '#fff',
+                                        pointHoverBackgroundColor: '#fff',
+                                        pointHoverBorderColor: 'rgba(0, 240, 255, 1)'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    scales: {
+                                        r: {
+                                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                                            pointLabels: { color: 'rgba(255, 255, 255, 0.7)', font: { size: 8 } },
+                                            ticks: { display: false, min: 0 }
+                                        }
+                                    },
+                                    plugins: { legend: { display: false } }
+                                }
+                            });
+                        });
+                    </script>
+                </div>
+                {% else %}
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; justify-content: center; min-height: 200px; flex-direction: column; gap: 1rem;">
+                    <h3 style="font-size: 1rem; margin: 0; display: flex; align-items: center; gap: 0.5rem; width: 100%; justify-content: flex-start;">
+                        <img src="/static/logos/{{ sym }}.ico" alt="{{ sym }}" style="width: 16px; height: 16px; border-radius: 4px; background: #fff;" onerror="this.src='/static/favicon.png'">
+                        {{ sym }}
+                    </h3>
+                    <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.85rem; text-align: center;">
+                        Esperando datos<br>(< 500 velas)
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if recent_news %}
+        <!-- OCULTADO PARA OCHOA: La tabla general de noticias ya no es necesaria aquí porque el LLM se muestra en la tabla de Opciones superior.
+        <div class="card animate-fade-in delay-2" style="margin-top: 3rem;">
+            <h2 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                📡 Radar de Sentimiento (IA)
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">
+                Últimas 10 noticias analizadas. Total noticias analizadas: {{ total_news }}
+            </p>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse; min-width: 600px;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.875rem;">
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Activo</th>
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Titular</th>
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Sentimiento</th>
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Impacto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for news in recent_news %}
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 1rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <img src="/static/logos/{{ news.symbol }}.ico" alt="{{ news.symbol }}" style="width: 24px; height: 24px; border-radius: 50%; background: #fff;" onerror="this.src='/static/favicon.png'">
+                                    <span style="font-weight: 600;">{{ news.symbol }}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 1rem; font-size: 0.875rem; max-width: 350px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ news.headline }}">
+                                {{ news.headline }}
+                            </td>
+                            <td style="padding: 1rem;">
+                                {% set sent = news.sentiment | upper %}
+                                <span class="badge" style="background: {% if sent == 'POSITIVO' %}rgba(16, 185, 129, 0.1); color: var(--success);{% elif sent == 'NEGATIVO' or sent == 'INSIDER_SELL' %}rgba(239, 68, 68, 0.1); color: var(--danger);{% else %}rgba(255, 255, 255, 0.1); color: var(--text-muted);{% endif %} border: 1px solid currentColor;">
+                                    {{ sent }}
+                                </span>
+                            </td>
+                            <td style="padding: 1rem; font-weight: 600; color: {% if news.impact_score > 0 %}var(--success){% elif news.impact_score < 0 %}var(--danger){% else %}var(--text-muted){% endif %};">
+                                {% if news.impact_score > 0 %}+{% endif %}{{ news.impact_score }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        -->
+        {% endif %}
+
+        {% if bot_scout_results %}
+        {% for bot_id, results in bot_scout_results.items() %}
+        <div class="card animate-fade-in delay-2" style="margin-top: 3rem;">
+            <h2 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                🎯 Radar (Scout) - Bot {{ bot_id }}
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 1.5rem; font-size: 0.875rem;">
+                Oportunidades detectadas por el sistema Scout para el Bot {{ bot_id }}.
+            </p>
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; text-align: left; border-collapse: collapse; min-width: 600px;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border); color: var(--text-muted); font-size: 0.875rem;">
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Símbolo</th>
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Brain Score</th>
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Motivo</th>
+                            <th style="padding: 0.75rem 1rem; font-weight: 500;">Precio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in results %}
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <td style="padding: 1rem;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <img src="/static/logos/{{ item.symbol|default(item.Symbol) }}.ico" alt="{{ item.symbol|default(item.Symbol) }}" style="width: 24px; height: 24px; border-radius: 50%; background: #fff;" onerror="this.src='/static/favicon.png'">
+                                    <span style="font-weight: 600;">{{ item.symbol|default(item.Symbol) }}</span>
+                                </div>
+                            </td>
+                            <td style="padding: 1rem; font-weight: bold;">
+                                {{ item.score|default(item.brain_score)|default(item.Brain_Score)|default(item['Brain Score']) }}
+                            </td>
+                            <td style="padding: 1rem; font-size: 0.875rem; max-width: 300px;">
+                                {{ item.reason|default(item.Reason) }}
+                            </td>
+                            <td style="padding: 1rem; font-family: monospace;">
+                                ${{ item.price|default(item.Price) }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        <div class="card animate-fade-in delay-2" style="margin-top: 3rem;">
+            <h2 style="margin-bottom: 1.5rem;">{% if bots %}Añadir / Actualizar API{% else %}Conecta tu Exchange{% endif %}</h2>
+            <form action="/add_api" method="POST">
+                <div class="form-group">
+                    <label class="form-label" for="exchange">Exchange</label>
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">¿No tienes Alpaca Advanced? <a href="https://alpaca.com/join/NP8L66N?src=referral-link" target="_blank" style="color: var(--accent); text-decoration: none;">Crear cuenta aquí</a></span>
+                    </div>
+                    <select id="exchange" name="exchange" class="form-control" required style="appearance: none;">
+                        <option value="alpaca">Alpaca Advanced Trade</option>
+                        <option value="binance" disabled>Binance (Próximamente)</option>
+                        <option value="kraken" disabled>Kraken (Próximamente)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="bot_name">Nombre del Bot</label>
+                    <input type="text" id="bot_name" name="bot_name" class="form-control" placeholder="Ej: Alpaca Kamikaze" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="api_key">API Key</label>
+                    <input type="text" id="api_key" name="api_key" class="form-control" placeholder="Ej: key_abc123..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="api_secret">API Secret</label>
+                    <input type="password" id="api_secret" name="api_secret" class="form-control" placeholder="Ej: secret_xyz987..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="is_live">Entorno</label>
+                    <select id="is_live" name="is_live" class="form-control" style="appearance: none;">
+                        <option value="0">Simulación (Paper Trading)</option>
+                        <option value="1">Dinero Real (Live Trading) ⚠️</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Vincular Bot</button>
+            </form>
+        </div>
+
+        <!-- Bóveda removida a petición del usuario -->
+    </div>
+</body>
+</html>

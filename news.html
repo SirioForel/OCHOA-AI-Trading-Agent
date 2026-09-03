@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Noticias y Velas | LOBO SaaS</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        function filterNews() {
+            const symbol = document.getElementById("symbolFilter").value;
+            const rows = document.querySelectorAll(".news-row");
+            rows.forEach(row => {
+                if (symbol === "ALL" || row.dataset.symbol === symbol) {
+                    row.style.display = "flex";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+    
+    <nav class="navbar">
+        <div class="brand" style="display: flex; align-items: center; gap: 0.5rem;">
+            <img src="/static/favicon.png" alt="Lobo Logo" style="width: 28px; height: 28px;">
+            OCHOA Hunter & Guardian
+        </div>
+        <div class="nav-actions" style="display: flex; gap: 0.5rem;">
+            <a href="/" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">← Volver al Panel</a>
+        </div>
+    </nav>
+
+    <div class="container animate-fade-in delay-1">
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;">Noticias & Datos Históricos</h1>
+            <p style="color: var(--text-muted);">Monitorización en tiempo real de los datos absorbidos por el Scraper para el entrenamiento de la IA.</p>
+        </div>
+
+        <div class="card" style="margin-bottom: 2rem;">
+            <h2 style="font-size: 1.25rem; margin-bottom: 1rem;">Estadísticas de Entrenamiento (Velas y Noticias)</h2>
+            <div class="grid grid-4" style="gap: 1rem;">
+                {% for stat in stats %}
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; position: relative;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <img src="/static/logos/{{ stat.symbol }}.ico" onerror="this.src='/static/favicon.png'" alt="{{ stat.symbol }}" style="width: 20px; height: 20px; border-radius: 4px; background: white; padding: 2px;">
+                        <strong style="font-size: 1.1rem;">{{ stat.symbol }}</strong>
+                        
+                        {% if stat.latest_analysis %}
+                            {% set action = stat.latest_analysis.action %}
+                            <span class="badge {% if action == 'BUY' %}positive{% elif action == 'SELL' %}negative{% endif %}" style="margin-left: auto; font-size: 0.65rem;">
+                                {{ action }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.9rem; color: var(--text-muted);">
+                        <span>Velas analizadas: <strong style="color: var(--text-main);">{{ stat.candle_count }}</strong></span>
+                        <span>Noticias procesadas: <strong style="color: var(--text-main);">{{ stat.news_count }}</strong></span>
+                    </div>
+                    
+                    {% if stat.latest_analysis %}
+                    <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed rgba(255,255,255,0.1); font-size: 0.8rem; line-height: 1.3;">
+                        <div style="color: {% if stat.latest_analysis.score > 60 %}var(--success){% elif stat.latest_analysis.score < 40 %}var(--danger){% else %}var(--accent){% endif %}; margin-bottom: 0.35rem; font-weight: 700; display: flex; justify-content: space-between;">
+                            <span>Confianza IA:</span>
+                            <span>{{ stat.latest_analysis.score }}/100</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.75rem; font-style: italic;">
+                            "{{ stat.latest_analysis.reason }}"
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem;">
+                * Se requieren al menos <strong>500 velas</strong> para que la Inteligencia Artificial pueda entrenar su modelo Random Forest.
+            </p>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="font-size: 1.25rem; margin: 0;">Registro de Sentimiento</h2>
+                <select id="symbolFilter" onchange="filterNews()" class="form-control" style="width: 200px; padding: 0.5rem;">
+                    <option value="ALL">Todas las empresas</option>
+                    {% for stat in stats %}
+                        <option value="{{ stat.symbol }}">{{ stat.symbol }} - {{ stat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div style="max-height: 600px; overflow-y: auto; padding-right: 0.5rem;">
+                {% for news in all_news %}
+                <div class="news-row" data-symbol="{{ news.symbol }}" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 0.75rem 0; border-bottom: 1px solid var(--border);">
+                    <div style="flex: 1; padding-right: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <img src="/static/logos/{{ news.symbol }}.ico" onerror="this.src='/static/favicon.png'" alt="{{ news.symbol }}" style="width: 16px; height: 16px; border-radius: 3px; background: white; padding: 1px;">
+                            <span style="font-weight: 700; font-size: 0.875rem;">{{ news.symbol }}</span>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">{{ news.published_at }}</span>
+                        </div>
+                        <h4 style="margin: 0; font-size: 0.95rem; line-height: 1.4; color: var(--text-main);">{{ news.headline }}</h4>
+                    </div>
+                    <div style="text-align: right; min-width: 120px;">
+                        <span class="badge {% if news.sentiment in ['positivo', 'insider_buy'] %}positive{% elif news.sentiment in ['negativo', 'insider_sell'] %}negative{% endif %}" style="display: inline-block; margin-bottom: 0.25rem;">
+                            {{ news.sentiment|upper }}
+                        </span>
+                        <div style="font-weight: 700; font-size: 1.1rem; color: {% if news.impact_score > 0 %}var(--success){% elif news.impact_score < 0 %}var(--danger){% else %}var(--text-muted){% endif %};">
+                            {{ "{:+}".format(news.impact_score) }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>
