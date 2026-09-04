@@ -57,9 +57,23 @@ During the hackathon, OCHOA lived through its first massive Option Expiration Da
 
 ## ⚙️ How to Run
 
+### 🐳 The "Hackathon Judge" Way (Recommended)
+The easiest way to run the entire OCHOA ecosystem (Dashboard, Scraper, and Trading Core) is using Docker:
+```bash
+docker-compose up --build
+```
+This will automatically:
+- Install all dependencies and the **Alpaca CLI**.
+- Expose the Dashboard on `http://localhost:5001`.
+- Expose the Scraper API on `http://localhost:8000`.
+- Run the Guardian Core (`ochoa_core.py`) every 15 minutes.
+
+### 💻 The Manual Way
 1. Clone this repository.
-2. Ensure you have the **Alpaca CLI** installed and authenticated (`alpaca profile`).
-3. Run the dashboard: `uvicorn dashboard:app --host 0.0.0.0 --port 5001`
-4. Run the trading core loop: `python3 ochoa_core.py` (Best set up as a cronjob or systemd service running every 15 minutes).
+2. Install dependencies: `pip install -r requirements.txt`
+3. Ensure you have the **Alpaca CLI** installed locally.
+4. Run the dashboard: `uvicorn dashboard:app --host 0.0.0.0 --port 5001`
+5. Run the scraper: `uvicorn scraper.main:app --host 0.0.0.0 --port 8000`
+6. Run the trading core loop: `python3 ochoa_core.py` (Best set up as a cronjob running every 15 minutes).
 
 *Built with ❤️, Python, FastAPI, and a lot of caffeine for the Alpaca Hackathon.*

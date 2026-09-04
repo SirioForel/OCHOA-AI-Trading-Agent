@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+pandas
+ta
+joblib
+ccxt
+requests
+aiosqlite
+authlib
+itsdangerous
+google-genai
+jinja2
+python-dotenv
+scikit-learn

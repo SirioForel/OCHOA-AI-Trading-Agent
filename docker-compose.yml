@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  dashboard:
+    build: .
+    container_name: ochoa_dashboard
+    ports:
+      - "5001:5001"
+    environment:
+      - DEBUG=True
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    command: uvicorn dashboard:app --host 0.0.0.0 --port 5001
+
+  scraper:
+    build: .
+    container_name: ochoa_scraper
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    command: uvicorn scraper.main:app --host 0.0.0.0 --port 8000
+
+  core:
+    build: .
+    container_name: ochoa_core
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    # Ejecuta ochoa_core.py cada 15 minutos en un bucle infinito
+    command: >
+      sh -c "while true; do 
+        echo '[Core] Starting execution cycle...'; 
+        python ochoa_core.py; 
+        echo '[Core] Cycle finished. Sleeping for 15 minutes...'; 
+        sleep 900; 
+      done"

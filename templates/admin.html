@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Admin | OCHOA Hunter & Guardian</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div class="bg-glow-2"></div>
+    
+    <nav class="navbar">
+        <div class="brand" style="display: flex; align-items: center; gap: 0.5rem;">
+            <img src="/static/favicon.png" alt="Lobo Logo" style="width: 28px; height: 28px;">
+            OCHOA Hunter & Guardian <span class="badge" style="background: var(--accent); color: #fff; margin-left: 0.5rem;">SÚPER ADMIN</span>
+        </div>
+        <div class="nav-actions">
+            <div class="user-info">
+                <span>{{ user.name or user.email }}</span>
+                {% if user.picture %}
+                <img src="{{ user.picture }}" alt="Avatar" class="user-avatar">
+                {% else %}
+                <div class="user-avatar" style="background: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    {{ user.email[0] | upper }}
+                </div>
+                {% endif %}
+            </div>
+            <a href="/" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.875rem;">Volver al Panel</a>
+        </div>
+    </nav>
+
+    <div class="container animate-fade-in delay-1">
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">SaaS Admin Dashboard</h1>
+            <p style="color: var(--text-muted);">Vista general de la plataforma y métricas globales del enjambre.</p>
+        </div>
+
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));">
+            <!-- Tarjeta Usuarios -->
+            <div class="card" style="text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+                <h3 style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;">Total Usuarios</h3>
+                <div class="metric" style="margin: 0;">{{ metrics.total_users }}</div>
+            </div>
+
+            <!-- Tarjeta Bots Totales -->
+            <div class="card" style="text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🤖</div>
+                <h3 style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;">Bots Registrados</h3>
+                <div class="metric" style="margin: 0;">{{ metrics.total_bots }}</div>
+            </div>
+
+            <!-- Tarjeta Bots Activos -->
+            <div class="card" style="text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
+                <h3 style="color: var(--text-muted); font-size: 1rem; margin-bottom: 0.5rem;">Bots Activos</h3>
+                <div class="metric positive" style="margin: 0;">{{ metrics.active_bots }}</div>
+            </div>
+        </div>
+        
+        <div class="card" style="margin-top: 2rem; text-align: center; border: 1px dashed var(--accent);">
+            <h3 style="margin-bottom: 1rem;">Próximas Funcionalidades</h3>
+            <p style="color: var(--text-muted); margin-bottom: 1rem;">Módulo de generación de invitaciones "Beta" y analítica avanzada de USD Total Gestionado en desarrollo.</p>
+        </div>
+    </div>
+</body>
+</html>

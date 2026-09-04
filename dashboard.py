@@ -24,7 +24,8 @@ logger = logging.getLogger("ochoa_dashboard")
 
 BASE_DIR = Path(__file__).resolve().parent
 
-os.environ['AUTHLIB_INSECURE_TRANSPORT'] = '1'
+if os.getenv("DEBUG", "False").lower() in ("true", "1", "yes"):
+    os.environ['AUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

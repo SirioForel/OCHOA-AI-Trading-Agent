@@ -141,7 +141,7 @@ async def get_global_metrics():
         }
 
 async def get_recent_news(limit=10):
-    db_path = os.getenv("ACTIVOS_DB_PATH", "/home/soporte/ochoa/activos_data.db")
+    db_path = os.getenv("ACTIVOS_DB_PATH", os.path.join(os.path.dirname(__file__), "activos_data.db"))
     if not os.path.exists(db_path):
         return 0, []
         
@@ -169,7 +169,7 @@ async def get_recent_news(limit=10):
         return total_news, news
 
 async def get_all_news():
-    db_path = os.getenv("ACTIVOS_DB_PATH", "/home/soporte/ochoa/activos_data.db")
+    db_path = os.getenv("ACTIVOS_DB_PATH", os.path.join(os.path.dirname(__file__), "activos_data.db"))
     if not os.path.exists(db_path):
         return []
         
@@ -187,7 +187,7 @@ async def get_all_news():
             return [dict(row) for row in rows]
 
 async def get_asset_stats():
-    db_path = os.getenv("ACTIVOS_DB_PATH", "/home/soporte/ochoa/activos_data.db")
+    db_path = os.getenv("ACTIVOS_DB_PATH", os.path.join(os.path.dirname(__file__), "activos_data.db"))
     if not os.path.exists(db_path):
         return []
         
